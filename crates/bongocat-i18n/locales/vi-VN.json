@@ -119,6 +119,9 @@
     "import": {
       "success": "Đã nhập mô hình",
       "failed": "Nhập mô hình thất bại",
+      "selection_dialog": {
+        "title": "Chọn mô hình"
+      },
       "mver_dialog": {
         "title": "Chọn chế độ cần chuyển đổi",
         "description": "Chọn các chế độ BongoCat Mver cần nhập.",
@@ -406,6 +409,9 @@
         },
         "toggle_repeated_expression": {
           "label": "Tắt biểu cảm khi kích hoạt lại"
+        },
+        "allow_motion_overlap": {
+          "label": "Cho phép chồng chuyển động"
         },
         "random_behavior_mode": {
           "label": "Phát ngẫu nhiên chuyển động hoặc biểu cảm",

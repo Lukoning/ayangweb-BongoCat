@@ -461,6 +461,16 @@ Gamepad axes -------- latest-value slot -------+        +--> UI snapshot
   规则），因此按键重复和连按既不会重启 clip 也不会重放 motion 音效。预览播放同样只播放一个
   循环并保持最终姿态，但每次请求都重新开始。显式停止的非零 fade 即使在 overlay 隐藏、没有
   下一帧时，也会按注入单调时钟在 fade duration 结束后视为 settled，避免过期 motion 阻塞随机行为。
+- `model.allow_motion_overlap` 默认关闭，旧 v1 文档缺少字段时按 `false` 读取。
+  打开后不同 motion identity 独立保留 clip、单调开始时间、完成状态、stop fade 与 UserData 游标；
+  共享参数按接纳启动的先后顺序求值，后启动层用资源自己的淡入淡出权重覆盖前层；重播匹配
+  identity 会移到末尾，幂等重复和 stop 不改变顺序。顺序来自插入次序而不是时间戳，因此同一
+  时钟采样内的启动也有确定次序，旧层终态不会永久遮住其他动作组的新播放。
+  优先级只仲裁匹配 identity，重复产品触发保持幂等，预览只重启匹配层。
+  关闭开关立即只保留最近启动的存活层；成功模型 commit 和 shutdown 清除全部层。
+  snapshot 的 `active_motions` 显示完整集合，`active_motion` 派生为最近启动的存活层；
+  UserData 保留来源 identity。随机动作仍让位于任何未结束的手动动作，音效沿用单路有序
+  worker（ADR-0088）。
 - `motion_stop` 只作用于匹配的当前动作，包括已完成并保持最终姿态的 motion。非零
   `FadeOutTime` 在 runtime snapshot 中保留
   active identity 和首次 stop command sequence，renderer 以正弦权重淡出并在结束帧后
@@ -1137,6 +1147,13 @@ resolver，不接受外部 `StorageLayout`、根目录或生产路径覆盖；�
 - 模型来源只有一种：用户通过文件夹选择器或窗口拖放提供的文件夹，就地读取后复制进 store 自己的
   staging。压缩包来源与它的解压边界已随实现一并移除（ADR-0036 已撤回，见该 ADR 的撤回说明）；要恢复
   时先与维护者确认。
+- 嵌套模型文件夹由 settings worker 调用 model store 只读发现：复用包的深度与条目预算，
+  拒绝链接、路径逃逸和包含目标 store 的来源，按相对路径排序。识别模型根后停止向资源目录
+  继续发现；普通包复用包验证与输入模式分类，Mver 源保留整组模式。单个嵌套模型自动进入
+  原导入流程；多个模型复用 GPUI Kit Dialog/Checkbox 展示所选文件夹名称与相对路径，默认
+  全选、空选禁止确认。选中来源逐个重新检测，按需选择模式，再执行已有导入与封面截取，
+  当前模型结束后才继续下一项。失败通知后继续独立来源；取消导入或关闭任一选择弹框清空
+  剩余队列。队列只存 UI 临时草稿，不进入持久化配置（ADR-0087）。
 - 导入在提交前把包内 `resources/left-keys` 与 `resources/right-keys` 下的旧键位名归一化到产品
   词汇表：`Alt.png` → `AltLeft.png`、`AltGr.png` → `AltRight.png`（ADR-0038）。这一步只作用在
   `ModelStore` 自己的 staging 上，因此用户选中的源目录始终是只读输入；改名不改变文件数与字节数，

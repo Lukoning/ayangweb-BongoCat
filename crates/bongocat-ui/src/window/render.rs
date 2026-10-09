@@ -174,6 +174,7 @@ impl Render for SettingsView {
         // reads the very entities the view syncs and subscribes to.
         let gamepad_connected_model_select = self.gamepad_connected_model_select.clone();
         let gamepad_disconnected_model_select = self.gamepad_disconnected_model_select.clone();
+        self.sync_model_selection_dialog(window, cx);
         self.sync_mver_mode_dialog(window, cx);
         if let Some(error) = self.pending_notification.take() {
             window.push_notification(
@@ -827,6 +828,31 @@ impl Render for SettingsView {
                             move |value, app| {
                                 view.update(app, |view, cx| {
                                     view.set_toggle_repeated_expression(value, cx)
+                                });
+                            }
+                        },
+                    ),
+                ),
+                SettingItem::new(
+                    bongocat_i18n::text(
+                        language.catalog_locale(),
+                        "settings.models.behavior.allow_motion_overlap.label",
+                    ),
+                    SettingField::switch(
+                        {
+                            let view = view_entity.clone();
+                            move |app| {
+                                view.read(app)
+                                    .snapshot
+                                    .as_ref()
+                                    .is_some_and(|s| s.allow_motion_overlap)
+                            }
+                        },
+                        {
+                            let view = view_entity.clone();
+                            move |value, app| {
+                                view.update(app, |view, cx| {
+                                    view.set_allow_motion_overlap(value, cx)
                                 });
                             }
                         },
